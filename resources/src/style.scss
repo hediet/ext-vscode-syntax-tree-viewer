@@ -1,0 +1,69 @@
+
+.selected>.header {
+    font-weight: bold;
+}
+
+.tree-node {
+    font-family: -apple-system,BlinkMacSystemFont,Segoe WPC,Segoe UI,HelveticaNeue-Light,Ubuntu,Droid Sans,sans-serif;
+
+    .header {
+        padding: 2px;
+        padding-left: 5px;
+        margin: 0;
+    }
+
+    .parentPropertyName {
+        color: blue;
+    }
+
+    .header>span {
+        cursor: pointer;
+    }
+
+    &.hovered > .header > span {
+        font-weight: bold;
+    }
+    
+    &.hovered > .header {
+        background-color: lighten(gray, 39);
+    }
+
+    $hoverBackgroundColor: lighten(gray, 43);
+
+    &.childHovered > .header {
+        background-color: whitesmoke;
+    }
+
+    &.hovered > .tree-children {
+        background-color: $hoverBackgroundColor;
+    }
+
+    .tree-children {
+        margin-left: 0px;
+        margin-top: 0px;
+
+        padding: 5px;
+        padding-left: 10px;
+    }
+
+    .childrenBorder {
+        border-left: 1px dotted gray;
+        padding-left: 10px;
+    }
+
+    .collapsed {
+        .tree-children {
+            display: none;
+        }
+        .collapsedIndicator {
+            display: inline;
+        }
+    }
+
+    .collapsedIndicator {
+        display: none;
+        color: silver;
+        margin-left: 5px;
+    }
+}
+
