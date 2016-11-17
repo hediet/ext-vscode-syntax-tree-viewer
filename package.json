@@ -1,7 +1,7 @@
 {
-  "name": "syntax-tree-visualizer",
-  "displayName": "Syntax Tree Visualizer",
-  "description": "",
+  "name": "syntax-tree-viewer",
+  "displayName": "Syntax Tree Viewer",
+  "description": "Visualizes Syntax Trees",
   "version": "0.0.1",
   "publisher": "hediet",
   "engines": {
