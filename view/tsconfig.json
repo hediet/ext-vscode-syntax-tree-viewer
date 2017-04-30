@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "es6",
+		"noImplicitAny": true,
+		"strictNullChecks": true,
+		"sourceMap": true,
+		"jsx": "react",
+		"lib": [
+			"es6", "dom"
+		],
+		"watch": true,
+		"outDir": "dist",
+		"experimentalDecorators": true
+	},
+	"exclude": [],
+	"include": ["src/**/*", "../src/interfaces.ts"]
+}

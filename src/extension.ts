@@ -1,77 +1,57 @@
+import { basename } from 'path';
 import * as vscode from 'vscode';
-import { TextDocumentContentProvider } from "./ContentProvider";
+import { DecoratedServiceReflector, ServiceInfo } from "hediet-remoting";
+
+import { WebsocketServer } from './WebsocketServer';
+import { SyntaxTreeViewBackend, SyntaxTreeViewFrontend } from './interfaces';
+import {
+	ITabViewFactory,
+	BrowserViewFactory,
+	StaticJsViewFactory,
+	SelfHostedViewFactory,
+	StaticViewContentProvider,
+	WebpackWebsocketView
+} from './ViewService';
+import { ModelService } from "./ModelService";
+import { SyntaxTreeViewBackendImpl } from "./SyntaxTreeViewBackendImpl";
 
 export function activate(context: vscode.ExtensionContext) {
+	const server = new WebsocketServer();
+	const staticViewContentProvider = new StaticViewContentProvider(basename(context.extensionPath));
+	context.subscriptions.push(staticViewContentProvider.registerToVsCode());
 
-    let provider = new TextDocumentContentProvider();
-    let registration = vscode.workspace.registerTextDocumentContentProvider(TextDocumentContentProvider.previewUri.scheme, provider);
+	const modelService = new ModelService();
+	context.subscriptions.push(modelService.registerToVsCode());
 
-    let activeDocument: vscode.Uri|null = null;
-    let cursorOffset: number|null = null;
+	let tabViewFactory: ITabViewFactory = ((mode: string) => {
+		switch (mode) {
+			case "static": return new StaticJsViewFactory("main", __dirname + "/view/main.js", staticViewContentProvider);
+			case "browser": return new BrowserViewFactory(vscode.Uri.parse("http://localhost:8080"));
+			case "dynamic": return new SelfHostedViewFactory(vscode.Uri.parse("http://localhost:8080"), staticViewContentProvider);
+			default: throw "Unsuported";
+		}
+	})("dynamic");
 
-    vscode.window.onDidChangeActiveTextEditor((e: vscode.TextEditor) => {
-        if (e && e.document.uri.toString() !== TextDocumentContentProvider.previewUri.toString()) {
-            activeDocument = e.document.uri;
-            provider.update(activeDocument, cursorOffset);
-        }
-    });
-    
-    vscode.workspace.onDidOpenTextDocument((e: vscode.TextDocument) => {
-        if (e && e.uri.toString() == activeDocument.toString()) {
-            provider.update(activeDocument, cursorOffset);
-        }
-    });
+	const mainView = new WebpackWebsocketView(tabViewFactory, server, 
+		new DecoratedServiceReflector(SyntaxTreeViewBackend), 
+		new DecoratedServiceReflector(SyntaxTreeViewFrontend));
+	
+	context.subscriptions.push(vscode.commands.registerCommand('syntaxtree.show', async () => {
+		const docUri = vscode.window.activeTextEditor.document.uri;
+		const hideStatusBarMsg = vscode.window.setStatusBarMessage("Loading view...");
 
-    vscode.window.onDidChangeTextEditorOptions((e: vscode.TextEditorOptionsChangeEvent) => {
-        if (e.textEditor.document.uri.toString() === activeDocument.toString()) {
-            provider.update(activeDocument, cursorOffset);
-        }
-    });
-
-    vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
-        if (e.document.uri.toString() === activeDocument.toString()) {
-            provider.update(activeDocument, cursorOffset);
-        }
-    });
-
-    vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
-        if (e.textEditor.document.uri.toString() === activeDocument.toString()) {
-            cursorOffset = e.textEditor.document.offsetAt(e.textEditor.selection.active);
-            provider.update(activeDocument, cursorOffset);
-        }
-    });
-
-    context.subscriptions.push(vscode.commands.registerCommand('syntaxtree.show', () => {
-        if (!activeDocument) {
-            activeDocument = vscode.window.activeTextEditor.document.uri;
-            provider.update(activeDocument, cursorOffset);
-        }
-
-        return vscode.commands.executeCommand('vscode.previewHtml', TextDocumentContentProvider.previewUri, vscode.ViewColumn.Two, 'Syntax Tree').then(
-            (success) => {},
-            (reason) => { vscode.window.showErrorMessage(reason); });
-    }));
-
-    const highlight = vscode.window.createTextEditorDecorationType({ backgroundColor: 'rgba(255, 153, 0,.55)' });
-
-    context.subscriptions.push(vscode.commands.registerCommand('syntaxtree.revealNode', (show: boolean, start: number, end: number) => {
-
-        const editor = vscode.window.visibleTextEditors.filter(e => e.document.uri.toString() === activeDocument.toString())[0];
-        if (show) {
-            const posStart = editor.document.positionAt(start);
-            const posEnd = editor.document.positionAt(end);
-            const range = new vscode.Range(posStart, posEnd);
-            editor.revealRange(range, vscode.TextEditorRevealType.Default);
-            editor.setDecorations(highlight, [range]);
-        }
-        else {
-            editor.setDecorations(highlight, []);
-        }
-    }));
-
+		const serverService = new SyntaxTreeViewBackendImpl(docUri);
+		modelService.addModel(serverService);
+ 
+		await mainView.show(vscode.ViewColumn.Two, `Syntax Tree`, serverService, 
+			async (clientInterface, onClientDisconnected) => { 
+				serverService.setFrontend(clientInterface);
+				onClientDisconnected.then(() => serverService.setFrontend(null)); 
+			});
+		
+		hideStatusBarMsg.dispose();
+	}));
 }
 
 export function deactivate() {
 }
-
-

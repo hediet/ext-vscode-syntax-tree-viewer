@@ -13,28 +13,37 @@
   "activationEvents": [
     "onCommand:syntaxtree.show"
   ],
-  "main": "./out/src/extension",
+  "main": "./out/extension",
   "contributes": {
     "commands": [
       {
         "command": "syntaxtree.show",
-        "title": "Show Syntax Tree"
+        "title": "Open Syntax Tree Visualizer"
       }
     ]
   },
   "scripts": {
-    "vscode:prepublish": "tsc -p ./ && cd resources && npm run bundle",
+    "vscode:prepublish": "tsc -p ./ && cd view && npm run bundle",
     "compile": "tsc -watch -p ./",
     "postinstall": "node ./node_modules/vscode/bin/install"
   },
   "devDependencies": {
-    "typescript": "^2.0.3",
+    "typescript": "^2.1.0",
     "vscode": "^1.0.0",
     "mocha": "^2.3.3",
     "@types/node": "^6.0.40",
-    "@types/mocha": "^2.2.32"
+    "@types/mocha": "^2.2.32",
+    "@types/urijs": "^1.15.31"
   },
   "dependencies": {
-    "typescript": "^2.0.9"
-  }
+    "@types/urijs": "^1.15.31",
+    "hediet-framework": "^1.1.0",
+    "hediet-remoting": "^1.1.0",
+    "hediet-remoting-socketio-server": "^1.1.0",
+    "typescript": "^2.0.9",
+    "urijs": "^1.18.7"
+  },
+  "files": [
+    "src"
+  ]
 }
